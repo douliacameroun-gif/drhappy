@@ -2,15 +2,28 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Role, Message, AuditReport } from "../types";
 
-// Safe access to environment variables to prevent crash on Vercel
-const getApiKey = () => {
+/**
+ * Utility to safely get environment variables in a browser context.
+ * This prevents "process is not defined" ReferenceErrors on Vercel.
+ */
+const getSafeEnv = (key: string): string => {
   try {
-    return (typeof process !== 'undefined' && process.env) 
-      ? (process.env.GEMINI_API_KEY || process.env.API_KEY || '') 
-      : '';
+    // Check various common locations for env vars
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key] as string;
+    }
+    // Fallback for some bundlers/environments
+    if (typeof window !== 'undefined' && (window as any).process?.env?.[key]) {
+      return (window as any).process.env[key];
+    }
   } catch (e) {
-    return '';
+    console.warn(`Error accessing env var ${key}:`, e);
   }
+  return '';
+};
+
+const getApiKey = () => {
+  return getSafeEnv('GEMINI_API_KEY') || getSafeEnv('API_KEY');
 };
 
 const SYSTEM_INSTRUCTION = `
@@ -34,6 +47,7 @@ export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
+    // Initialize with the safe API Key
     this.ai = new GoogleGenAI({ apiKey: getApiKey() });
   }
 
