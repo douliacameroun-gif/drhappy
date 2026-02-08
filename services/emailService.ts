@@ -1,34 +1,45 @@
 
-const getEnv = (key: string): string => {
-  if (typeof window !== 'undefined' && (window as any).process?.env?.[key]) {
-    return (window as any).process.env[key];
-  }
-  return typeof process !== 'undefined' ? (process.env?.[key] || '') : '';
+/**
+ * Utility to safely get environment variables in a browser context.
+ */
+const getSafeEnv = (key: string): string => {
+  try {
+    if (typeof window !== 'undefined' && (window as any).process?.env?.[key]) {
+      return (window as any).process.env[key];
+    }
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key] as string;
+    }
+  } catch (e) {}
+  return '';
 };
 
 export const emailService = {
   sendAuditReport: async (reportData: any) => {
-    const serviceId = getEnv('EMAILJS_SERVICE_ID');
-    const templateId = getEnv('EMAILJS_TEMPLATE_ID');
-    const publicKey = getEnv('EMAILJS_PUBLIC_KEY');
+    const serviceId = getSafeEnv('EMAILJS_SERVICE_ID');
+    const templateId = getSafeEnv('EMAILJS_TEMPLATE_ID');
+    const publicKey = getSafeEnv('EMAILJS_PUBLIC_KEY');
 
     if (!serviceId || !templateId || !publicKey) {
-      console.warn("EmailJS : Variables manquantes.");
+      console.warn("EmailJS : Variables de configuration manquantes sur Vercel.");
       return false;
     }
 
     try {
+      // @ts-ignore - EmailJS est chargé via CDN dans index.html
       if (typeof window !== 'undefined' && (window as any).emailjs) {
-        await (window as any).emailjs.send(
-          serviceId, templateId,
-          {
-            doctor_name: "Dr Happy",
-            hospital: "Hôpital Laquintinie",
-            priority_feature: reportData.priorityFeature,
-            time_gain: reportData.timeGain
-          },
-          publicKey
-        );
+        
+        // On s'assure que les données sont des strings simples pour éviter DOMException
+        const payload = {
+          doctor_name: "Dr Happy",
+          hospital: "Hôpital Laquintinie",
+          priority_feature: String(reportData.priorityFeature || "Audit IA"),
+          time_gain: String(reportData.timeGain || "Non spécifié"),
+          report_json: JSON.stringify(reportData)
+        };
+
+        await (window as any).emailjs.send(serviceId, templateId, payload, publicKey);
+        console.log("Audit envoyé avec succès au promoteur.");
         return true;
       }
       return false;

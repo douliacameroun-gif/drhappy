@@ -5,10 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DOULIA - Audit Stratégique IA</title>
-    <!-- SCRIPT DE SÉCURITÉ ANTI-ÉCRAN BLANC -->
     <script>
-        // Ce script s'exécute AVANT tout le reste pour empêcher le crash "process is not defined"
+        // Polyfill immédiat pour éviter le crash ReferenceError: process is not defined
         window.process = window.process || { env: {} };
+        
+        // Système de secours pour capturer les erreurs fatales (écran blanc)
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("FATAL UI ERROR:", message, "at", source, lineno);
+            // Si l'écran reste blanc après 2s, on affiche un message d'aide
+            setTimeout(() => {
+                const root = document.getElementById('root');
+                if (root && root.innerHTML === "") {
+                    root.innerHTML = `<div style="padding:20px; color:white; background:#001F3F; height:100vh; font-family:sans-serif;">
+                        <h2>Erreur de chargement DOULIA</h2>
+                        <p>L'application n'a pas pu démarrer. Détails : ${message}</p>
+                        <p>Vérifiez que vos variables d'environnement (GEMINI_API_KEY) sont bien configurées sur Vercel.</p>
+                    </div>`;
+                }
+            }, 2000);
+        };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
