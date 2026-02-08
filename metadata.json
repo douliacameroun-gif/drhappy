@@ -1,0 +1,7 @@
+{
+  "name": "DOULIA - Audit IA Dr Happy",
+  "description": "Une interface d'audit intelligente et empathique conçue pour le Dr Happy à l'Hôpital Laquintinie, pilotée par Douly, l'experte-auditrice IA de DOULIA.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
