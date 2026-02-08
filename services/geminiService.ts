@@ -2,53 +2,34 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Role, Message, AuditReport } from "../types";
 
-/**
- * Utility to safely get environment variables in a browser context.
- * This prevents "process is not defined" ReferenceErrors on Vercel.
- */
-const getSafeEnv = (key: string): string => {
-  try {
-    // Check various common locations for env vars
-    if (typeof process !== 'undefined' && process.env && process.env[key]) {
-      return process.env[key] as string;
-    }
-    // Fallback for some bundlers/environments
-    if (typeof window !== 'undefined' && (window as any).process?.env?.[key]) {
-      return (window as any).process.env[key];
-    }
-  } catch (e) {
-    console.warn(`Error accessing env var ${key}:`, e);
+// Accès ultra-sécurisé aux variables Vercel
+const getApiKey = (): string => {
+  if (typeof window !== 'undefined' && (window as any).process?.env?.GEMINI_API_KEY) {
+    return (window as any).process.env.GEMINI_API_KEY;
   }
-  return '';
-};
-
-const getApiKey = () => {
-  return getSafeEnv('GEMINI_API_KEY') || getSafeEnv('API_KEY');
+  return (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) 
+    ? process.env.GEMINI_API_KEY 
+    : (process.env?.API_KEY || '');
 };
 
 const SYSTEM_INSTRUCTION = `
 Tu es Douly, l'Experte-Auditrice IA de DOULIA, spécialisée dans l'analyse des flux de travail médicaux pour le Docteur Happy à l'Hôpital La Quintinie de Douala.
-
-REGLE DE MEMOIRE ET DE FLUIDITÉ :
-- Tu poursuis une conversation en cours. 
-- NE REPETE JAMAIS "Bonjour Docteur" ou des salutations initiales si la conversation a déjà commencé.
-- Reprends exactement là où l'échange s'est arrêté. 
-- Sois concise et directe tout en restant extrêmement respectueuse.
-
-REGLE DE LANGUE ABSOLUE :
-- Tu dois TOUJOURS répondre en FRANÇAIS. 
-
-MISSION :
-- Analyser les flux de travail, identifier les points de douleur et proposer des solutions IA.
-- Ton texte doit être pur, sans astérisques ou caractères spéciaux.
+Réponds TOUJOURS en Français. Pas de caractères spéciaux comme les astérisques.
 `;
 
 export class GeminiService {
-  private ai: GoogleGenAI;
+  private aiInstance: GoogleGenAI | null = null;
 
-  constructor() {
-    // Initialize with the safe API Key
-    this.ai = new GoogleGenAI({ apiKey: getApiKey() });
+  // On initialise l'IA seulement quand on en a besoin (Lazy loading)
+  private get ai(): GoogleGenAI {
+    if (!this.aiInstance) {
+      const key = getApiKey();
+      if (!key) {
+        console.warn("ATTENTION : Clé API manquante dans les variables d'environnement Vercel.");
+      }
+      this.aiInstance = new GoogleGenAI({ apiKey: key });
+    }
+    return this.aiInstance;
   }
 
   async sendMessage(message: string, history: Message[], fileData?: { data: string, mimeType: string }): Promise<string> {
@@ -69,19 +50,14 @@ export class GeminiService {
 
       let parts: any[] = [{ text: message }];
       if (fileData) {
-        parts.push({
-          inlineData: {
-            data: fileData.data,
-            mimeType: fileData.mimeType
-          }
-        });
+        parts.push({ inlineData: { data: fileData.data, mimeType: fileData.mimeType } });
       }
 
       const response = await session.sendMessage({ message: parts });
       return (response.text || "").replace(/[*#]/g, '').trim();
     } catch (error) {
-      console.error("Gemini API Error:", error);
-      return "Docteur, une petite instabilité technique survient. Pourriez-vous reformuler votre dernière idée ?";
+      console.error("Erreur Gemini:", error);
+      return "Docteur, une instabilité technique survient. Vérifiez la configuration de la clé API.";
     }
   }
 
@@ -89,26 +65,21 @@ export class GeminiService {
     try {
       const response = await this.ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Lis ceci chaleureusement pour le Docteur Happy: ${text}` }] }],
+        contents: [{ parts: [{ text: `Lis ceci : ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Zephyr' },
-            },
-          },
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
         },
       });
       return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     } catch (error) {
-      console.error("TTS Error:", error);
       return undefined;
     }
   }
 
   async generateFinalReport(history: Message[]): Promise<AuditReport> {
     const historyText = history.map(m => `${m.role}: ${m.text}`).join('\n');
-    const prompt = `Génère le rapport de synthèse final JSON pour le promoteur de DOULIA. \n${historyText}`;
+    const prompt = `Génère le rapport final JSON : \n${historyText}`;
     
     const response = await this.ai.models.generateContent({
       model: 'gemini-3-flash-preview',
