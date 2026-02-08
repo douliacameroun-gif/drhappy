@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DOULIA - Audit Stratégique IA</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -49,7 +50,6 @@
             animation: drift-slow 40s infinite linear;
         }
 
-        /* Nano Particles for main chat area depth */
         .ai-nano {
             position: fixed;
             width: 1.5px;
@@ -79,39 +79,6 @@
             to { transform: translate(-40px, 40px) scale(1.1); }
         }
 
-        @keyframes dot-pulse {
-            0%, 100% { transform: scale(1); opacity: 0.4; }
-            50% { transform: scale(1.4); opacity: 1; }
-        }
-
-        @keyframes line-shimmer {
-            0%, 100% { opacity: 0.1; width: 4px; }
-            50% { opacity: 0.6; width: 12px; }
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(0, 31, 63, 0.04);
-            box-shadow: 0 8px 32px rgba(0, 31, 63, 0.05);
-        }
-
-        /* Enhanced AI Title Animation */
-        @keyframes glow-title {
-            0%, 100% { 
-                opacity: 0.9; 
-                text-shadow: 0 0 10px rgba(164, 198, 57, 0.2);
-                transform: translateY(0);
-            }
-            50% { 
-                opacity: 1; 
-                text-shadow: 0 0 25px rgba(164, 198, 57, 0.6), 0 0 5px #fff;
-                color: #fff;
-                transform: translateY(-1px);
-            }
-        }
-        .animate-ai-title { animation: glow-title 4s infinite ease-in-out; }
-
         @keyframes scanning-line {
             0% { transform: translateY(-100%); opacity: 0; }
             20% { opacity: 0.3; }
@@ -128,13 +95,19 @@
             z-index: 5;
         }
 
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 31, 63, 0.04);
         }
 
+        @keyframes glow-title {
+            0%, 100% { opacity: 0.9; text-shadow: 0 0 10px rgba(164, 198, 57, 0.2); }
+            50% { opacity: 1; text-shadow: 0 0 25px rgba(164, 198, 57, 0.6), 0 0 5px #fff; }
+        }
+        .animate-ai-title { animation: glow-title 4s infinite ease-in-out; }
+
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0, 31, 63, 0.1); border-radius: 10px; }
     </style>
 <script type="importmap">
@@ -150,17 +123,8 @@
 </head>
 <body>
     <div class="ai-particle"></div>
-    <div class="ai-drifter" style="top: 5%; left: 15%; animation-delay: 0s;"></div>
-    <div class="ai-drifter" style="top: 25%; left: 45%; animation-delay: -5s;"></div>
-    <div class="ai-drifter" style="top: 55%; left: 85%; animation-delay: -10s;"></div>
-    <div class="ai-drifter" style="top: 85%; left: 25%; animation-delay: -15s;"></div>
-    
-    <!-- Subtle Nano Particles -->
-    <div class="ai-nano" style="top: 15%; left: 20%; animation-delay: -10s;"></div>
-    <div class="ai-nano" style="top: 45%; left: 70%; animation-delay: -25s;"></div>
-    <div class="ai-nano" style="top: 75%; left: 10%; animation-delay: -40s;"></div>
-    <div class="ai-nano" style="top: 30%; left: 40%; animation-delay: -55s;"></div>
-    
+    <div class="ai-drifter" style="top: 5%; left: 15%;"></div>
+    <div class="ai-nano" style="top: 15%; left: 20%;"></div>
     <div id="root"></div>
 </body>
 </html>

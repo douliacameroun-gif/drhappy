@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AuditReport } from '../types';
+import { emailService } from '../services/emailService';
 
 interface ReportModalProps {
   report: AuditReport;
@@ -8,9 +9,21 @@ interface ReportModalProps {
 }
 
 const ReportModal: React.FC<ReportModalProps> = ({ report, onClose }) => {
-  const handleWhatsAppShare = () => {
+  const [isSending, setIsSending] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsSending(true);
+    
+    // 1. WhatsApp Share
     const text = `SYNTHESE AUDIT DOULIA\n\nDocteur Happy - Hôpital Laquintinie\n\nFONCTIONNALITE : ${report.priorityFeature}\nGAIN ESTIMÉ : ${report.timeGain}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+
+    // 2. EmailJS Send
+    await emailService.sendAuditReport(report);
+    
+    setIsSending(false);
+    setIsSent(true);
   };
 
   return (
@@ -54,7 +67,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ report, onClose }) => {
             <section>
               <h3 className="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] mb-6 flex items-center">
                 <span className="w-8 h-[2px] bg-red-400 mr-4"></span>
-                Points de Friction Identifiés
+                Points de Friction
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {report.painPoints.map((point, i) => (
@@ -67,18 +80,14 @@ const ReportModal: React.FC<ReportModalProps> = ({ report, onClose }) => {
             </section>
 
             <section className="bg-[#001F3F] text-white rounded-[2.5rem] p-10 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-[#A4C639]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-               <h3 className="text-[#A4C639] font-black text-[10px] tracking-[0.4em] mb-6 uppercase">La Solution DOULIA</h3>
-               <div className="text-2xl font-black mb-8 leading-snug">
-                 {report.priorityFeature}
-               </div>
-               
+               <h3 className="text-[#A4C639] font-black text-[10px] tracking-[0.4em] mb-6 uppercase">La Solution IA DOULIA</h3>
+               <div className="text-2xl font-black mb-8 leading-snug">{report.priorityFeature}</div>
                <div className="grid grid-cols-2 gap-6">
-                 <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
+                 <div className="bg-white/5 p-6 rounded-3xl border border-white/10 text-center">
                    <div className="text-[10px] text-[#A4C639] font-black uppercase tracking-widest mb-1">Gain de temps</div>
                    <div className="text-2xl font-black">{report.timeGain}</div>
                  </div>
-                 <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
+                 <div className="bg-white/5 p-6 rounded-3xl border border-white/10 text-center">
                    <div className="text-[10px] text-[#A4C639] font-black uppercase tracking-widest mb-1">Complexité</div>
                    <div className="text-2xl font-black">{report.technicalComplexity}</div>
                  </div>
@@ -86,45 +95,23 @@ const ReportModal: React.FC<ReportModalProps> = ({ report, onClose }) => {
             </section>
 
             <section className="border-2 border-slate-50 p-10 rounded-[2.5rem]">
-               <h3 className="text-[#001F3F] font-black text-xl mb-6 flex items-center">
-                 <span className="mr-3">📞</span> Contact DOULIA
-               </h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-500 font-bold mb-10">
-                 <div className="flex items-center p-4 bg-slate-50 rounded-2xl">
-                   <span className="mr-3 text-lg">🌐</span>
-                   www.douliacameroun.com
-                 </div>
-                 <div className="flex items-center p-4 bg-slate-50 rounded-2xl">
-                   <span className="mr-3 text-lg">✉️</span>
-                   contact@douliacameroun.com
-                 </div>
-                 <div className="flex flex-col p-4 bg-slate-50 rounded-2xl">
-                   <div className="flex items-center mb-1">
-                     <span className="mr-3 text-lg">📱</span>
-                     (+237) 6 73 04 31 27
-                   </div>
-                   <div className="flex items-center">
-                     <span className="mr-3 text-lg invisible">📱</span>
-                     (+237) 6 56 30 48 18
-                   </div>
-                 </div>
-                 <div className="flex items-center p-4 bg-slate-50 rounded-2xl">
-                   <span className="mr-3 text-lg">🏥</span>
-                   Douala, Cameroun
-                 </div>
+               <h3 className="text-[#001F3F] font-black text-xl mb-6">📞 Contacts DOULIA</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold text-slate-500 mb-8">
+                 <div className="p-3 bg-slate-50 rounded-xl">🌐 www.douliacameroun.com</div>
+                 <div className="p-3 bg-slate-50 rounded-xl">✉️ contact@douliacameroun.com</div>
                </div>
                
                <div className="flex flex-col md:flex-row gap-5">
                  <button 
-                   onClick={handleWhatsAppShare}
-                   className="flex-1 bg-[#A4C639] text-[#001F3F] font-black py-5 rounded-2xl hover:scale-[1.02] transition-all flex items-center justify-center shadow-xl shadow-[#A4C639]/30 uppercase tracking-widest text-xs"
+                   onClick={handleConfirm}
+                   disabled={isSending || isSent}
+                   className={`flex-1 font-black py-5 rounded-2xl transition-all flex items-center justify-center shadow-xl uppercase tracking-widest text-xs ${
+                     isSent ? 'bg-slate-200 text-slate-500' : 'bg-[#A4C639] text-[#001F3F] hover:scale-[1.02] shadow-[#A4C639]/30'
+                   }`}
                  >
-                   Confirmer via WhatsApp
+                   {isSending ? 'Envoi en cours...' : isSent ? 'Rapport Transmis' : 'Confirmer & Transmettre'}
                  </button>
-                 <button 
-                   onClick={onClose}
-                   className="px-10 py-5 rounded-2xl border-2 border-slate-100 text-slate-400 font-black hover:bg-slate-50 transition-all text-xs uppercase tracking-widest"
-                 >
+                 <button onClick={onClose} className="px-10 py-5 rounded-2xl border-2 border-slate-100 text-slate-400 font-black hover:bg-slate-50 transition-all text-xs uppercase tracking-widest">
                    Fermer
                  </button>
                </div>

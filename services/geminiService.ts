@@ -2,6 +2,17 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Role, Message, AuditReport } from "../types";
 
+// Safe access to environment variables to prevent crash on Vercel
+const getApiKey = () => {
+  try {
+    return (typeof process !== 'undefined' && process.env) 
+      ? (process.env.GEMINI_API_KEY || process.env.API_KEY || '') 
+      : '';
+  } catch (e) {
+    return '';
+  }
+};
+
 const SYSTEM_INSTRUCTION = `
 Tu es Douly, l'Experte-Auditrice IA de DOULIA, spécialisée dans l'analyse des flux de travail médicaux pour le Docteur Happy à l'Hôpital La Quintinie de Douala.
 
@@ -13,25 +24,17 @@ REGLE DE MEMOIRE ET DE FLUIDITÉ :
 
 REGLE DE LANGUE ABSOLUE :
 - Tu dois TOUJOURS répondre en FRANÇAIS. 
-- L'utilisation de l'ANGLAIS est STRICTEMENT INTERDITE, sauf demande explicite.
-
-REGLE CRITIQUE DE FORMATAGE :
-- N'utilise JAMAIS d'astérisques (*) ou de caractères spéciaux comme le dièse (#).
-- Ton texte doit être pur, élégant et fluide. 
-- Utilise uniquement des sauts de ligne pour structurer tes réponses.
-- Pas de gras markdown. Utilise des MAJUSCULES pour souligner un point critique si nécessaire.
 
 MISSION :
 - Analyser les flux de travail, identifier les points de douleur et proposer des solutions IA.
-- Valider les émotions avant de demander des détails techniques.
-- Rassure sur le prix qui est flexible et abordable pour le contexte local camerounais.
+- Ton texte doit être pur, sans astérisques ou caractères spéciaux.
 `;
 
 export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    this.ai = new GoogleGenAI({ apiKey: getApiKey() });
   }
 
   async sendMessage(message: string, history: Message[], fileData?: { data: string, mimeType: string }): Promise<string> {
@@ -72,7 +75,7 @@ export class GeminiService {
     try {
       const response = await this.ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Lis ceci de manière chaleureuse et professionnelle pour le Docteur Happy: ${text}` }] }],
+        contents: [{ parts: [{ text: `Lis ceci chaleureusement pour le Docteur Happy: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -91,7 +94,7 @@ export class GeminiService {
 
   async generateFinalReport(history: Message[]): Promise<AuditReport> {
     const historyText = history.map(m => `${m.role}: ${m.text}`).join('\n');
-    const prompt = `Génère le rapport de synthèse final pour le promoteur de DOULIA. IMPORTANT : Aucun caractère spécial (* ou #). Réponds en FRANÇAIS. \n${historyText}`;
+    const prompt = `Génère le rapport de synthèse final JSON pour le promoteur de DOULIA. \n${historyText}`;
     
     const response = await this.ai.models.generateContent({
       model: 'gemini-3-flash-preview',
